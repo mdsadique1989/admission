@@ -172,37 +172,39 @@
         <!-- Senior Secondary Subject Placeholders (Class 11 & 12) -->
         <div id="seniorSubjectsBox" style="display:none;margin-top:16px;border-top:1px dashed var(--line);padding-top:14px;">
           <label style="color:var(--navy);font-weight:700;display:block;margin-bottom:8px;">
-            अनिवार्य एवं ऐच्छिक विषय (5 अनिवार्य + 1 अतिरिक्त विषय)
+            अनिवार्य, ऐच्छिक एवं अतिरिक्त विषय (2 अनिवार्य + 3 ऐच्छिक + 1 वैकल्पिक अतिरिक्त विषय)
           </label>
+          <p class="hint" style="margin-top:-4px;">नीचे दिए गए विषय और उनके कोड संकाय (Arts / Science / Commerce) के अनुसार स्वतः बदल जाते हैं — पहले ऊपर संकाय चुनें।</p>
           <div class="grid">
             <div class="field">
-              <label for="subComp1">अनिवार्य विषय 1 (Compulsory 1) <span class="req">*</span></label>
-              <input type="text" id="subComp1" placeholder="उदा. Hindi / English">
+              <label for="subComp1">अनिवार्य विषय समूह-1 (Compulsory Group-1) <span class="req">*</span></label>
+              <select id="subComp1"><option value="">-- पहले संकाय चुनें --</option></select>
               <div class="err-text" data-err="subComp1"></div>
             </div>
             <div class="field">
-              <label for="subComp2">अनिवार्य विषय 2 (Compulsory 2) <span class="req">*</span></label>
-              <input type="text" id="subComp2" placeholder="उदा. English / Urdu">
+              <label for="subComp2">अनिवार्य विषय समूह-2 (Compulsory Group-2) <span class="req">*</span></label>
+              <select id="subComp2"><option value="">-- पहले संकाय चुनें --</option></select>
               <div class="err-text" data-err="subComp2"></div>
             </div>
             <div class="field">
-              <label for="subElec1">ऐच्छिक विषय 1 (Elective 1) <span class="req">*</span></label>
-              <input type="text" id="subElec1" placeholder="उदा. Physics / History / Accountancy">
+              <label for="subElec1">ऐच्छिक विषय 1 (Elective — किसी भी 3 में से 1) <span class="req">*</span></label>
+              <select id="subElec1"><option value="">-- पहले संकाय चुनें --</option></select>
               <div class="err-text" data-err="subElec1"></div>
             </div>
             <div class="field">
-              <label for="subElec2">ऐच्छिक विषय 2 (Elective 2) <span class="req">*</span></label>
-              <input type="text" id="subElec2" placeholder="उदा. Chemistry / Pol. Science / Business Studies">
+              <label for="subElec2">ऐच्छिक विषय 2 (Elective — किसी भी 3 में से 1) <span class="req">*</span></label>
+              <select id="subElec2"><option value="">-- पहले संकाय चुनें --</option></select>
               <div class="err-text" data-err="subElec2"></div>
             </div>
             <div class="field">
-              <label for="subElec3">ऐच्छिक विषय 3 (Elective 3) <span class="req">*</span></label>
-              <input type="text" id="subElec3" placeholder="उदा. Biology / Math / Economics / Geography">
+              <label for="subElec3">ऐच्छिक विषय 3 (Elective — किसी भी 3 में से 1) <span class="req">*</span></label>
+              <select id="subElec3"><option value="">-- पहले संकाय चुनें --</option></select>
               <div class="err-text" data-err="subElec3"></div>
             </div>
             <div class="field">
-              <label for="subAddl">अतिरिक्त विषय (Additional Optional Subject)</label>
-              <input type="text" id="subAddl" placeholder="वैकल्पिक (उदा. Mathematics / Computer Science)">
+              <label for="subAddl">अतिरिक्त विषय (Additional — वैकल्पिक)</label>
+              <select id="subAddl"><option value="">-- पहले संकाय चुनें --</option></select>
+              <div class="hint">Computer Science, Yoga &amp; Phy. Edu. और Multi M. &amp; Web. Tech. को बाद में किसी अन्य विषय से बदला नहीं जा सकता।</div>
               <div class="err-text" data-err="subAddl"></div>
             </div>
           </div>
@@ -477,11 +479,6 @@
         </div>
       </div>
 
-      <p class="hint" style="margin-top:-4px;">
-        जमा करते समय ब्राउज़र आपसे स्थान (लोकेशन) की अनुमति माँग सकता है — यह केवल सत्यापन हेतु विद्यालय को भेजी जाती है; अनुमति न देने पर भी आवेदन सामान्य रूप से जमा होगा।<br>
-        Your browser may ask for location permission when you submit — this is sent to the school only for verification purposes; declining it will not stop your application from being submitted.
-      </p>
-
       <div class="btn-row">
         <button type="button" class="btn btn-secondary" id="previewBtn">👁 आवेदन पूर्वावलोकन</button>
         <button type="submit" class="btn btn-primary" id="submitBtn">✅ आवेदन जमा करें</button>
@@ -579,7 +576,7 @@
 
   // ================= CONFIG =================
   var CONFIG = {
-    WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbwDaNP1yLEypgbsvQDyZydA4PS6ZL602Ri1OZ843MUMaHhJzUZMLqAgb04FLrQedzxSbQ/exec'
+    WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbwGsrrpZVGLCnso7Ekj_ldwU2jonC_dpqZNs3wavsQANE89SgRFdOPVd5dZfQfIg5VxiA/exec'
   };
   function backendConfigured(){
     return CONFIG.WEB_APP_URL && CONFIG.WEB_APP_URL.indexOf('script.google.com') !== -1;
@@ -622,6 +619,112 @@
   var langGroupEl = document.getElementById('langGroup');
   var seniorSubjectsBox = document.getElementById('seniorSubjectsBox');
 
+  // ---- BSEB Class XI/XII subject groups + official numerical codes, per
+  // stream. Source: the board's own "Subject details with their numerical
+  // codes" sheet (Arts/Science/Commerce). Each entry is [subjectName, code].
+  // Compulsory Group-2, Elective, and Additional each have their OWN code
+  // for a given subject name within a stream (e.g. Science: Urdu is 107 in
+  // Compulsory Group-2 but 126 in Additional) — so cross-group "already
+  // selected" checks below compare by NAME, never by the full code string.
+  var SUBJECT_DATA = {
+    Arts: {
+      comp1: [['English','305'],['Hindi','306']],
+      comp2: [['English','305'],['Hindi','306'],['Urdu','307'],['Maithili','308'],['Sanskrit','309'],['Prakrit','310'],['Magahi','311'],['Bhojpuri','312'],['Arabic','313'],['Persian','314'],['Pali','315'],['Bangla','316']],
+      elective: [['Music','318'],['Home Science','319'],['Philosophy','320'],['History','321'],['Political Science','322'],['Geography','323'],['Psychology','324'],['Sociology','325'],['Economics','326'],['Mathematics','327']],
+      additional: [['Yoga & Phy. Edu.','317'],['Music','318'],['Home Science','319'],['Philosophy','320'],['History','321'],['Political Science','322'],['Geography','323'],['Psychology','324'],['Sociology','325'],['Economics','326'],['Mathematics','327'],['Computer Science','328'],['Multi M. & Web. Tech.','329'],['English','330'],['Hindi','331'],['Urdu','332'],['Maithili','333'],['Sanskrit','334'],['Prakrit','335'],['Magahi','336'],['Bhojpuri','337'],['Arabic','338'],['Persian','339'],['Pali','340'],['Bangla','341']]
+    },
+    Science: {
+      comp1: [['English','105'],['Hindi','106']],
+      comp2: [['English','105'],['Hindi','106'],['Urdu','107'],['Maithili','108'],['Sanskrit','109'],['Prakrit','110'],['Magahi','111'],['Bhojpuri','112'],['Arabic','113'],['Persian','114'],['Pali','115'],['Bangla','116']],
+      elective: [['Physics','117'],['Chemistry','118'],['Biology','119'],['Agriculture','120'],['Mathematics','121']],
+      additional: [['Computer Science','122'],['Multi M. & Web. Tech.','123'],['English','124'],['Hindi','125'],['Urdu','126'],['Maithili','127'],['Sanskrit','128'],['Prakrit','129'],['Magahi','130'],['Bhojpuri','131'],['Arabic','132'],['Persian','133'],['Pali','134'],['Bangla','135'],['Physics','117'],['Chemistry','118'],['Biology','119'],['Agriculture','120'],['Mathematics','121']]
+    },
+    Commerce: {
+      comp1: [['English','205'],['Hindi','206']],
+      comp2: [['English','205'],['Hindi','206'],['Urdu','207'],['Maithili','208'],['Sanskrit','209'],['Prakrit','210'],['Magahi','211'],['Bhojpuri','212'],['Arabic','213'],['Persian','214'],['Pali','215'],['Bangla','216']],
+      elective: [['Business Studies','217'],['Entrepreneurship','218'],['Economics','219'],['Accountancy','220']],
+      additional: [['Computer Science','221'],['Multi M. & Web. Tech.','222'],['English','223'],['Hindi','224'],['Urdu','225'],['Maithili','226'],['Sanskrit','227'],['Prakrit','228'],['Magahi','229'],['Bhojpuri','230'],['Arabic','231'],['Persian','232'],['Pali','233'],['Bangla','234'],['Business Studies','217'],['Entrepreneurship','218'],['Economics','219'],['Accountancy','220']]
+    }
+  };
+
+  var subComp1El = document.getElementById('subComp1');
+  var subComp2El = document.getElementById('subComp2');
+  var subElec1El = document.getElementById('subElec1');
+  var subElec2El = document.getElementById('subElec2');
+  var subElec3El = document.getElementById('subElec3');
+  var subAddlEl  = document.getElementById('subAddl');
+
+  function subjectNameOf(fullValue){
+    if(!fullValue) return '';
+    var idx = fullValue.lastIndexOf(' (');
+    return idx === -1 ? fullValue : fullValue.slice(0, idx);
+  }
+
+  // Rebuilds one <select>'s options from `list` (array of [name, code]),
+  // skipping any whose NAME is in `excludeNames` (already chosen in a group
+  // this one isn't allowed to overlap with). Keeps the select's current
+  // selection only if it's still a valid, non-excluded option afterward —
+  // otherwise resets to blank, rather than silently leaving a now-conflicting
+  // value in place.
+  function rebuildSubjectSelect(selectEl, list, excludeNames, placeholderText){
+    var prevValue = selectEl.value;
+    selectEl.innerHTML = '';
+    var ph = document.createElement('option');
+    ph.value = ''; ph.textContent = placeholderText;
+    selectEl.appendChild(ph);
+    var stillValid = false;
+    list.forEach(function(pair){
+      var name = pair[0], code = pair[1];
+      if(excludeNames.indexOf(name) !== -1) return;
+      var fullValue = name + ' (' + code + ')';
+      var opt = document.createElement('option');
+      opt.value = fullValue;
+      opt.textContent = name + ' — ' + code;
+      selectEl.appendChild(opt);
+      if(fullValue === prevValue) stillValid = true;
+    });
+    selectEl.value = stillValid ? prevValue : '';
+  }
+
+  // Rebuilds all six subject dropdowns together, in dependency order, so
+  // each one's exclusion list reflects the others' CURRENT selections:
+  // Compulsory Group-2 excludes Group-1's subject; the three Electives
+  // mutually exclude each other; Additional excludes all five of the above.
+  function refreshSubjectDropdowns(){
+    var data = SUBJECT_DATA[streamEl.value];
+    if(!data){
+      [subComp1El, subComp2El, subElec1El, subElec2El, subElec3El, subAddlEl].forEach(function(el){
+        el.innerHTML = '<option value="">-- पहले संकाय चुनें --</option>';
+        el.value = '';
+      });
+      return;
+    }
+
+    rebuildSubjectSelect(subComp1El, data.comp1, [], '-- चुनें / Select --');
+    var comp1Name = subjectNameOf(subComp1El.value);
+
+    rebuildSubjectSelect(subComp2El, data.comp2, comp1Name ? [comp1Name] : [], '-- चुनें / Select --');
+    var comp2Name = subjectNameOf(subComp2El.value);
+
+    var e1 = subjectNameOf(subElec1El.value);
+    var e2 = subjectNameOf(subElec2El.value);
+    var e3 = subjectNameOf(subElec3El.value);
+
+    rebuildSubjectSelect(subElec1El, data.elective, [e2, e3].filter(Boolean), '-- चुनें / Select --');
+    e1 = subjectNameOf(subElec1El.value);
+    rebuildSubjectSelect(subElec2El, data.elective, [e1, e3].filter(Boolean), '-- चुनें / Select --');
+    e2 = subjectNameOf(subElec2El.value);
+    rebuildSubjectSelect(subElec3El, data.elective, [e1, e2].filter(Boolean), '-- चुनें / Select --');
+    e3 = subjectNameOf(subElec3El.value);
+
+    var usedNames = [comp1Name, comp2Name, e1, e2, e3].filter(Boolean);
+    rebuildSubjectSelect(subAddlEl, data.additional, usedNames, '-- कोई नहीं / None --');
+  }
+
+  [streamEl, subComp1El, subComp2El, subElec1El, subElec2El, subElec3El, subAddlEl].forEach(function(el){
+    el.addEventListener('change', refreshSubjectDropdowns);
+  });
+
   function updateClassDependentFields(){
     var val = admClassEl.value;
     var isC1 = (val === 'Class I');
@@ -658,6 +761,7 @@
         if(input) input.value = '';
       });
     }
+    refreshSubjectDropdowns();
   }
   admClassEl.addEventListener('change', updateClassDependentFields);
   updateClassDependentFields();
@@ -819,69 +923,7 @@
     data.signaturePreview = sigDisplayUri;
     data.isEdit = document.getElementById('isEditMode').value === 'true';
     data.applicationId = document.getElementById('existingAppId').value;
-    data.deviceInfo = getDeviceInfo(); // browser-reported only — see note in getDeviceInfo()
-    data.geoLocationName = geoLocationName;   // blank unless the browser's own
-    data.geoLocationLink = geoLocationLink;   // location prompt was explicitly allowed
     return data;
-  }
-
-  // ---- Optional, consent-based location capture (for the school's owner
-  // notification email only — never shown back to the applicant) ----
-  // Uses the browser's native geolocation permission prompt. If the visitor
-  // declines it, or the device has no location capability, both values stay
-  // blank — deliberately NOT backed by any IP-based or other fallback, so a
-  // decline is respected rather than worked around.
-  var geoLocationName = '';
-  var geoLocationLink = '';
-  var geoLocationCaptured = false;
-
-  function captureGeoLocation(){
-    if(geoLocationCaptured) return Promise.resolve();
-    geoLocationCaptured = true;
-    return new Promise(function(resolve){
-      if(!('geolocation' in navigator)){ resolve(); return; }
-      navigator.geolocation.getCurrentPosition(
-        function(pos){
-          var lat = pos.coords.latitude, lng = pos.coords.longitude;
-          geoLocationLink = 'https://www.google.com/maps?q=' + lat + ',' + lng;
-          // Reverse-geocode to a human-readable place name (free, no API key)
-          // instead of sending raw coordinates.
-          fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&zoom=16')
-            .then(function(r){ return r.json(); })
-            .then(function(d){
-              geoLocationName = (d && d.display_name) ? d.display_name : (lat.toFixed(5) + ', ' + lng.toFixed(5));
-              resolve();
-            })
-            .catch(function(){
-              geoLocationName = lat.toFixed(5) + ', ' + lng.toFixed(5);
-              resolve();
-            });
-        },
-        function(){ resolve(); }, // permission denied / unavailable / timed out — leave blank
-        { timeout: 8000 }
-      );
-    });
-  }
-
-  /**
-   * Best-effort, self-reported device/browser summary for the owner
-   * notification email — NOT a verified identity signal. Apps Script has no
-   * way to see the visitor's real IP address, so this is limited to whatever
-   * the browser voluntarily discloses about itself (and can be spoofed).
-   */
-  function getDeviceInfo(){
-    try {
-      var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-      return [
-        'UA: ' + (navigator.userAgent || ''),
-        'Platform: ' + (navigator.platform || ''),
-        'Lang: ' + (navigator.language || ''),
-        'Screen: ' + (screen.width || '?') + 'x' + (screen.height || '?'),
-        'TZ: ' + tz
-      ].join(' | ');
-    } catch(e){
-      return '';
-    }
   }
 
   function validateForm(data){
@@ -1071,11 +1113,6 @@
     var origText = submitBtn.textContent;
     submitBtn.textContent = '⏳ जमा हो रहा है...';
 
-    // Ask for location permission at the moment of submitting (a genuine user
-    // gesture, and the point at which the on-page notice about it is visible).
-    // If declined, submission proceeds anyway with these fields blank.
-    captureGeoLocation().then(function(){
-    data = Object.assign(data, { geoLocationName: geoLocationName, geoLocationLink: geoLocationLink });
     var payload = Object.assign({ action: 'submit' }, data);
     delete payload.photoPreview;    // display-only, never sent — see collectFormData()
     delete payload.signaturePreview;
@@ -1120,7 +1157,6 @@
         submitBtn.textContent = origText;
         toast('नेटवर्क त्रुटि। कृपया पुनः प्रयास करें।');
       });
-    }); // end captureGeoLocation().then(...)
   });
 
   // ---- Lightweight arithmetic CAPTCHA (client-side friction; the real
@@ -1193,6 +1229,23 @@
             el.value = r[k] || '';
           }
         });
+        // The six subject <select>s above were just set via the generic
+        // loop too, but at that moment they only had a placeholder option
+        // (their real option lists depend on `stream`, set in the SAME
+        // loop just before). updateClassDependentFields() rebuilds those
+        // lists for the now-known stream; then we re-apply the stored
+        // subject values now that matching <option>s actually exist, and
+        // refresh once more so cross-group exclusions reflect them.
+        // Note: applications submitted before this dropdown redesign have
+        // free-text subject values (e.g. "Hindi") that won't match the new
+        // "Name (Code)" option format — those six fields will simply come
+        // up blank here and need re-selecting, same as a fresh application.
+        updateClassDependentFields();
+        ['subComp1','subComp2','subElec1','subElec2','subElec3','subAddl'].forEach(function(id){
+          var el = document.getElementById(id);
+          if(el && r[id]) el.value = r[id];
+        });
+        refreshSubjectDropdowns();
 
         // Set Radio
         var cwsnRadio = document.querySelector('input[name="cwsn"][value="'+r.cwsn+'"]');
