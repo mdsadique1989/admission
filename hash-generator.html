@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Password Hash Generator — UMV Chochahi Chhapra</title>
+<style>
+  :root{
+    --navy:#0f2a4a; --navy-dark:#0a1d33; --paper:#f7f5f0; --ink:#1c2430;
+    --muted:#6b7280; --line:#dfd9cc; --good:#1a7a4c; --accent:#b3562e;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Georgia','Noto Serif Devanagari',serif;
+    background:var(--paper); color:var(--ink); padding:32px 16px;
+  }
+  .wrap{ max-width:560px; margin:0 auto; }
+  h1{
+    font-size:1.4rem; color:var(--navy); margin:0 0 6px;
+    font-family:'Segoe UI','Noto Sans Devanagari',sans-serif; font-weight:700;
+  }
+  .sub{ color:var(--muted); font-size:.92rem; margin:0 0 28px; line-height:1.5; }
+  .card{
+    background:#fff; border:1px solid var(--line); border-radius:6px;
+    padding:22px 24px; margin-bottom:18px;
+  }
+  label{
+    display:block; font-family:'Segoe UI','Noto Sans Devanagari',sans-serif;
+    font-size:.85rem; color:var(--navy); font-weight:600; margin-bottom:6px;
+  }
+  input[type=text], input[type=password]{
+    width:100%; padding:10px 12px; font-size:1rem; border:1px solid var(--line);
+    border-radius:4px; font-family:'Segoe UI','Noto Sans Devanagari',sans-serif;
+    margin-bottom:16px;
+  }
+  input:focus{ outline:2px solid var(--navy); outline-offset:1px; }
+  .toggle{
+    font-family:'Segoe UI',sans-serif; font-size:.8rem; color:var(--muted);
+    display:inline-flex; align-items:center; gap:6px; margin:-10px 0 16px; cursor:pointer;
+  }
+  button{
+    background:var(--navy); color:#fff; border:none; padding:11px 20px;
+    border-radius:4px; font-family:'Segoe UI','Noto Sans Devanagari',sans-serif;
+    font-size:.95rem; font-weight:600; cursor:pointer;
+  }
+  button:hover{ background:var(--navy-dark); }
+  .result{ margin-top:20px; }
+  .result-row{ margin-bottom:14px; }
+  .result-row .k{
+    font-family:'Segoe UI',sans-serif; font-size:.78rem; color:var(--muted);
+    text-transform:uppercase; letter-spacing:.03em; margin-bottom:4px;
+  }
+  .copybox{
+    display:flex; gap:8px; align-items:stretch;
+  }
+  .copybox code{
+    flex:1; background:#f0ede4; border:1px solid var(--line); border-radius:4px;
+    padding:9px 10px; font-family:'Courier New',monospace; font-size:.85rem;
+    word-break:break-all; color:var(--ink);
+  }
+  .copybox button{ padding:9px 14px; font-size:.85rem; flex-shrink:0; }
+  .copied{ color:var(--good); font-family:'Segoe UI',sans-serif; font-size:.8rem; margin-left:8px; }
+  .rowline{
+    background:#f0ede4; border:1px solid var(--line); border-radius:4px;
+    padding:12px 14px; font-family:'Courier New',monospace; font-size:.82rem;
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+  }
+  .note{
+    font-family:'Segoe UI','Noto Sans Devanagari',sans-serif; font-size:.82rem;
+    color:var(--muted); line-height:1.6; margin-top:26px; padding-top:18px;
+    border-top:1px solid var(--line);
+  }
+  .note b{ color:var(--ink); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔑 Admin Password Hash Generator</h1>
+  <p class="sub">
+    उ.मा.वि. चोचाही छपरा — Admissions System के लिए स्टाफ पासवर्ड हैश बनाएँ।<br>
+    यह पूरी तरह ऑफ़लाइन काम करता है — कुछ भी इंटरनेट पर नहीं भेजा जाता।<br>
+    <span style="color:var(--accent);">Runs entirely offline in your browser — nothing is sent anywhere.</span>
+  </p>
+
+  <div class="card">
+    <label for="username">स्टाफ का यूज़रनेम / Staff Username</label>
+    <input type="text" id="username" placeholder="e.g. principal, clerk1">
+
+    <label for="password">पासवर्ड / Password</label>
+    <input type="password" id="password" placeholder="स्टाफ का पासवर्ड टाइप करें">
+    <label class="toggle"><input type="checkbox" id="showPw" style="margin:0;"> पासवर्ड दिखाएँ / show password</label>
+
+    <label for="displayName">प्रदर्शित नाम / Display Name (dashboard में दिखेगा)</label>
+    <input type="text" id="displayName" placeholder="e.g. Principal Sir">
+
+    <button id="genBtn">हैश बनाएँ / Generate Hash</button>
+
+    <div class="result" id="result" style="display:none;">
+      <div class="result-row">
+        <div class="k">Password Hash (यह sheet में जाएगा)</div>
+        <div class="copybox">
+          <code id="hashOut"></code>
+          <button id="copyHash">Copy</button>
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="k">Sheet रो — इसे 'admins' टैब में एक नई पंक्ति के रूप में जोड़ें (टैब-अलग किया हुआ, सीधे पेस्ट करने योग्य)</div>
+        <div class="rowline">
+          <span id="rowLine" style="overflow-x:auto;white-space:nowrap;"></span>
+          <button id="copyRow">Copy Row</button>
+        </div>
+      </div>
+      <span class="copied" id="copiedMsg" style="display:none;">✅ Copied!</span>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>कैसे इस्तेमाल करें:</b> ऊपर यूज़रनेम, पासवर्ड और प्रदर्शित नाम भरें, "हैश बनाएँ" दबाएँ, फिर नीचे दिखाई गई पूरी पंक्ति ("Copy Row") कॉपी करके अपनी Google Sheet के <b>admins</b> टैब में एक नई खाली पंक्ति में पेस्ट करें (Paste special → Values only, या साधारण पेस्ट)। हर स्टाफ सदस्य के लिए यह दोहराएँ।<br><br>
+    <b>How to use:</b> Fill in the username, password, and display name above, click "Generate Hash," then copy the full row shown below and paste it as a new row in your Sheet's <b>admins</b> tab (headers: username, passwordHash, displayName). Repeat for each staff member. The plain password itself is never stored anywhere — only this hash. Keep a private note of who has which password elsewhere, since there's no way to recover it from the hash later.
+  </div>
+</div>
+
+<script>
+async function sha256Base64(text) {
+  const enc = new TextEncoder().encode(text);
+  const digest = await crypto.subtle.digest('SHA-256', enc);
+  const bytes = new Uint8Array(digest);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+document.getElementById('showPw').addEventListener('change', function(){
+  document.getElementById('password').type = this.checked ? 'text' : 'password';
+});
+
+document.getElementById('genBtn').addEventListener('click', async function(){
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const displayName = document.getElementById('displayName').value.trim();
+
+  if (!username || !password) {
+    alert('कृपया यूज़रनेम और पासवर्ड दोनों भरें। / Please fill in both username and password.');
+    return;
+  }
+
+  const hash = await sha256Base64(password);
+  document.getElementById('hashOut').textContent = hash;
+  document.getElementById('rowLine').textContent = username + '\t' + hash + '\t' + (displayName || username);
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('copiedMsg').style.display = 'none';
+});
+
+function copyText(text){
+  navigator.clipboard.writeText(text).then(function(){
+    const msg = document.getElementById('copiedMsg');
+    msg.style.display = 'inline';
+    setTimeout(function(){ msg.style.display = 'none'; }, 2000);
+  });
+}
+document.getElementById('copyHash').addEventListener('click', function(){
+  copyText(document.getElementById('hashOut').textContent);
+});
+document.getElementById('copyRow').addEventListener('click', function(){
+  copyText(document.getElementById('rowLine').textContent);
+});
+</script>
+</body>
+</html>
