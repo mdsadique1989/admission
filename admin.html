@@ -48,8 +48,9 @@
 
 <header>
   <h1>🔐 UHS CHOCHAHI CHHAPRA — Admissions Admin Dashboard</h1>
-  <div id="headerRight" class="hidden">
-    <button class="btn-secondary btn-sm" id="signOutBtn" style="margin-left:10px;">Log out</button>
+  <div id="headerRight" class="hidden" style="display:flex;align-items:center;gap:10px;">
+    <span id="versionInfo" style="font-size:.78rem;color:#cbd5e1;"></span>
+    <button class="btn-secondary btn-sm" id="signOutBtn">Log out</button>
   </div>
 </header>
 
@@ -113,6 +114,11 @@
     PAGE_SIZE: 100
   };
 
+  // Bump this manually whenever admin.html itself is updated/redeployed —
+  // purely informational, shown in the header next to the username so it's
+  // easy to confirm which version a browser is actually running.
+  var ADMIN_UI_VERSION = 'v1-2026-10-08';
+
   // ---- Session (token stored per-tab in sessionStorage; never the raw password) ----
   var session = { token: null, username: '', displayName: '' };
   try {
@@ -144,6 +150,63 @@
   var totalRecords = 0;
   var currentOffset = 0;
   var searchDebounceTimer = null;
+
+  // ---- Photo/signature replacement in the edit modal — "admin" account
+  // only (enforced server-side in handleAdminUpdate_; this UI gate is just
+  // a convenience, see openEditModal below). Compression targets match
+  // index.html's processImage() exactly, so a replaced file is held to the
+  // same size/quality standard as a brand-new submission.
+  var ADMIN_DPI_FACTOR = 400 / 2.54;
+  var ADMIN_PHOTO_TARGET = { w: Math.round(3.5 * ADMIN_DPI_FACTOR), h: Math.round(3.0 * ADMIN_DPI_FACTOR) };
+  var ADMIN_SIG_TARGET   = { w: Math.round(3.5 * ADMIN_DPI_FACTOR), h: Math.round(1.1 * ADMIN_DPI_FACTOR) };
+  var ADMIN_ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+
+  function adminProcessImage(file, minKB, maxKB, targetWidth, targetHeight, previewEl, storeCb){
+    if(!file) return;
+    if(ADMIN_ALLOWED_IMAGE_TYPES.indexOf(file.type) === -1){
+      toast('असमर्थित चित्र प्रारूप। केवल JPEG, PNG या WebP स्वीकार्य है।');
+      return;
+    }
+    previewEl.innerHTML = '<p style="color:#666;font-size:.8rem;">Processing...</p>';
+
+    var reader = new FileReader();
+    reader.onload = function(event){
+      var img = new Image();
+      img.onload = function(){
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+        var quality = 0.90;
+        var dataUrl = '';
+        var fileSizeKB = 0;
+        var attempts = 0;
+
+        do {
+          dataUrl = canvas.toDataURL('image/jpeg', quality);
+          var stringLength = dataUrl.split(',')[1].length;
+          fileSizeKB = (stringLength * 3 / 4) / 1024;
+          if(fileSizeKB > maxKB){ quality -= 0.05; }
+          else if(fileSizeKB < minKB){ quality += 0.03; }
+          attempts++;
+        } while((fileSizeKB < minKB || fileSizeKB > maxKB) && quality > 0.05 && quality < 1.0 && attempts < 100);
+
+        previewEl.innerHTML = '';
+        var resultImg = document.createElement('img');
+        resultImg.src = dataUrl;
+        resultImg.style.cssText = 'max-width:100%;max-height:90px;object-fit:contain;';
+        previewEl.appendChild(resultImg);
+        storeCb(dataUrl);
+      };
+      img.onerror = function(){
+        toast('चित्र अमान्य है। कृपया दूसरी फाइल चुनें।');
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
 
   var fieldLabels = {
     admClass:'नामांकन कक्षा', rollNo:'रोल नंबर / Roll No', stream:'संकाय / Stream', langGroup:'भाषा समूह (Class 9/10)',
@@ -194,6 +257,8 @@
     document.getElementById('dashboard').classList.remove('hidden');
     document.getElementById('headerRight').classList.remove('hidden');
     document.getElementById('exportCsvBtn').style.display = canExport() ? '' : 'none';
+    document.getElementById('versionInfo').textContent =
+      'Version: ' + ADMIN_UI_VERSION + ' · Logged in as: ' + (session.username || '—');
   }
 
   function showSignIn(msg){
@@ -318,6 +383,14 @@
 
       actionsTd.appendChild(document.createTextNode(' '));
 
+      var editBtn = document.createElement('button');
+      editBtn.className = 'btn-secondary btn-sm';
+      editBtn.textContent = 'संपादित करें';
+      editBtn.onclick = function(){ openEditModal(r); };
+      actionsTd.appendChild(editBtn);
+
+      actionsTd.appendChild(document.createTextNode(' '));
+
       var delBtn = document.createElement('button');
       delBtn.className = 'btn-danger btn-sm';
       delBtn.textContent = 'हटाएँ';
@@ -398,6 +471,142 @@
       tr.appendChild(td1); tr.appendChild(td2); table.appendChild(tr);
     });
     modalContent.appendChild(table);
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  /**
+   * Lets an admin directly fix a typo/mistake in any plain data field —
+   * entirely separate from the public Aadhaar+mobile edit flow on the
+   * website. Deliberately does NOT offer photo/signature replacement
+   * (out of scope here; those stay exactly as uploaded) or the
+   * class/stream-dependent dropdown logic the public form uses — just a
+   * straightforward text field per value, same set as the View modal.
+   */
+  function openEditModal(r){
+    var modalContent = document.getElementById('modalContent');
+    modalContent.innerHTML = '';
+
+    var closeBtn = document.createElement('button');
+    closeBtn.className = 'modal-close';
+    closeBtn.textContent = '×';
+    closeBtn.onclick = function(){ document.getElementById('modalOverlay').classList.remove('open'); };
+    modalContent.appendChild(closeBtn);
+
+    var h3 = document.createElement('h3');
+    h3.style.color = 'var(--navy)';
+    h3.style.marginTop = '0';
+    h3.textContent = 'संपादित करें — ' + (r.applicationId || '');
+    modalContent.appendChild(h3);
+
+    var note = document.createElement('p');
+    note.style.cssText = 'font-size:.82rem;color:#666;margin-top:-6px;';
+    note.textContent = canExport()
+      ? 'Application ID यहाँ से नहीं बदला जा सकता।'
+      : 'फोटो, हस्ताक्षर और Application ID यहाँ से नहीं बदले जा सकते।';
+    modalContent.appendChild(note);
+
+    var table = document.createElement('table');
+    var inputs = {};
+    Object.keys(fieldLabels).forEach(function(k){
+      var tr = document.createElement('tr');
+      var td1 = document.createElement('td'); td1.textContent = fieldLabels[k];
+      var td2 = document.createElement('td');
+      var input = document.createElement('input');
+      input.type = 'text';
+      input.style.cssText = 'width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:.9rem;box-sizing:border-box;';
+      input.value = (k === 'dob') ? formatDateDMY(r[k] || '') : (r[k] || '');
+      inputs[k] = input;
+      td2.appendChild(input);
+      tr.appendChild(td1); tr.appendChild(td2); table.appendChild(tr);
+    });
+    modalContent.appendChild(table);
+
+    // Photo/signature replacement — shown only for the "admin" account; see
+    // handleAdminUpdate_ in Code.gs for the actual (server-side) boundary.
+    var newPhotoDataUrl = null, newSignatureDataUrl = null;
+    if(canExport()){
+      var imgSection = document.createElement('div');
+      imgSection.style.cssText = 'margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:14px;';
+
+      var photoBox = document.createElement('div');
+      var photoLabel = document.createElement('label');
+      photoLabel.textContent = 'नया फोटो (वैकल्पिक)';
+      photoLabel.style.cssText = 'display:block;font-size:.85rem;font-weight:600;color:var(--navy);margin-bottom:6px;';
+      var photoPreview = document.createElement('div');
+      fetchAndShowImage(photoPreview, r.photoFileId, 90, 76);
+      var photoInput = document.createElement('input');
+      photoInput.type = 'file'; photoInput.accept = 'image/jpeg,image/png,image/webp';
+      photoInput.style.cssText = 'margin-top:8px;font-size:.8rem;';
+      photoInput.addEventListener('change', function(){
+        adminProcessImage(photoInput.files[0], 50, 100, ADMIN_PHOTO_TARGET.w, ADMIN_PHOTO_TARGET.h, photoPreview, function(u){ newPhotoDataUrl = u; });
+      });
+      photoBox.appendChild(photoLabel); photoBox.appendChild(photoPreview); photoBox.appendChild(photoInput);
+
+      var sigBox = document.createElement('div');
+      var sigLabel = document.createElement('label');
+      sigLabel.textContent = 'नया हस्ताक्षर (वैकल्पिक)';
+      sigLabel.style.cssText = 'display:block;font-size:.85rem;font-weight:600;color:var(--navy);margin-bottom:6px;';
+      var sigPreview = document.createElement('div');
+      fetchAndShowImage(sigPreview, r.signatureFileId, 130, 50);
+      var sigInput = document.createElement('input');
+      sigInput.type = 'file'; sigInput.accept = 'image/jpeg,image/png,image/webp';
+      sigInput.style.cssText = 'margin-top:8px;font-size:.8rem;';
+      sigInput.addEventListener('change', function(){
+        adminProcessImage(sigInput.files[0], 5, 20, ADMIN_SIG_TARGET.w, ADMIN_SIG_TARGET.h, sigPreview, function(u){ newSignatureDataUrl = u; });
+      });
+      sigBox.appendChild(sigLabel); sigBox.appendChild(sigPreview); sigBox.appendChild(sigInput);
+
+      imgSection.appendChild(photoBox);
+      imgSection.appendChild(sigBox);
+      modalContent.appendChild(imgSection);
+    }
+
+    var btnRow = document.createElement('div');
+    btnRow.style.cssText = 'margin-top:14px;display:flex;gap:10px;';
+
+    var saveBtn = document.createElement('button');
+    saveBtn.className = 'btn-primary';
+    saveBtn.textContent = '💾 सहेजें / Save';
+    saveBtn.onclick = function(){
+      var fieldsOut = {};
+      Object.keys(inputs).forEach(function(k){ fieldsOut[k] = inputs[k].value; });
+      saveBtn.disabled = true;
+      var orig = saveBtn.textContent;
+      saveBtn.textContent = '⏳ सहेजा जा रहा है...';
+      var payload = { action: 'adminUpdate', token: session.token, applicationId: r.applicationId, fields: fieldsOut };
+      if(newPhotoDataUrl) payload.photo = newPhotoDataUrl;
+      if(newSignatureDataUrl) payload.signature = newSignatureDataUrl;
+      callApi(payload)
+        .then(function(result){
+          saveBtn.disabled = false;
+          saveBtn.textContent = orig;
+          if(!result.success){
+            if(/session|token|unauthorized/i.test(result.error || '')) { showSignIn(result.error); return; }
+            toast('सहेजने में विफल: ' + (result.error || ''));
+            return;
+          }
+          Object.keys(fieldsOut).forEach(function(k){ r[k] = fieldsOut[k]; });
+          if(result.photoFileId) r.photoFileId = result.photoFileId;
+          if(result.signatureFileId) r.signatureFileId = result.signatureFileId;
+          toast('✅ सफलतापूर्वक सहेजा गया।');
+          document.getElementById('modalOverlay').classList.remove('open');
+          renderTable();
+        })
+        .catch(function(){
+          saveBtn.disabled = false;
+          saveBtn.textContent = orig;
+          toast('नेटवर्क त्रुटि — सहेजा नहीं जा सका।');
+        });
+    };
+    btnRow.appendChild(saveBtn);
+
+    var cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn-secondary';
+    cancelBtn.textContent = 'रद्द करें / Cancel';
+    cancelBtn.onclick = function(){ document.getElementById('modalOverlay').classList.remove('open'); };
+    btnRow.appendChild(cancelBtn);
+
+    modalContent.appendChild(btnRow);
     document.getElementById('modalOverlay').classList.add('open');
   }
 

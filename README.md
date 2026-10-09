@@ -8,7 +8,7 @@ The project has three parts:
 |---|---|
 | `Code.gs` | Backend — Google Apps Script Web App (API, data storage, auth, email) |
 | `index.html` | Public admission form — apply, edit, download/print an application |
-| `admin.html` | Staff dashboard — search, view, delete, export applications |
+| `admin.html` | Staff dashboard — search, view, edit, delete, export applications |
 
 For deployment steps, see **[SETUP_GUIDE.md](./SETUP_GUIDE.md)**.
 For how the pieces fit together, see **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
@@ -32,9 +32,11 @@ For how the pieces fit together, see **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
 - **Username/password login** with signed, expiring session tokens (raw password is never resent after login).
 - **Search & filter** applications by class and free text (name, Application ID, PEN, mobile, Aadhaar), paginated server-side.
 - **View full record** in a modal. Photo and signature are fetched on demand the moment the modal opens — not preloaded with the record list — since the underlying files are private and only released to an authenticated admin session.
+- **Edit** any record's plain data fields directly (fixing a student's typo in their name, mobile, address, class, etc.) without going through the public Aadhaar+mobile edit flow — every logged-in admin account can do this, not just `admin`. The Application ID itself can't be changed this way. **Replacing the photo or signature is restricted to the `admin` account specifically** — every other admin account can edit everything else but doesn't see those upload fields at all, and is refused server-side if it tries anyway.
 - **Delete** a record (with a confirmation prompt and a stale-row safety check).
 - **CSV export** of the full filtered result set (not just the currently loaded page) — restricted to the account literally named **"admin"**. Every other admin account can search, view, and delete exactly as before, but doesn't see the export button and is refused server-side if it tries anyway.
 - **Session auto-expiry handling** — any API call that reports an invalid/expired session bounces the dashboard back to the sign-in screen.
+- **Header shows the dashboard's own version string and who's logged in** (e.g. "Version: v1-2026-10-08 · Logged in as: admin") — purely informational, useful for confirming a browser is running the latest `admin.html` after an update.
 
 ### Backend (`Code.gs`)
 - **Google Sheet as database** — a `data` tab holds every application; columns are looked up by header name everywhere, so new fields can be appended to `HEADERS` and old sheets migrate automatically (existing data is never disturbed).
@@ -63,9 +65,11 @@ For how the pieces fit together, see **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
 
 ```
 .
-├── Code.gs           # Apps Script backend — deploy as a Web App
-├── index.html        # Public admission form (apply / edit / download)
-├── admin.html         # Staff admin dashboard
+├── Code.gs               # Apps Script backend — deploy as a Web App
+├── index.html            # Public admission form (apply / edit / download)
+├── admin.html            # Staff admin dashboard
+├── hash-generator.html   # Optional offline utility — generates admins-sheet password hashes
+│                         #   without touching the Apps Script editor; see SETUP_GUIDE.md step 9
 ├── README.md
 ├── ARCHITECTURE.md
 └── SETUP_GUIDE.md
@@ -78,6 +82,7 @@ For how the pieces fit together, see **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
 1. Read **[SETUP_GUIDE.md](./SETUP_GUIDE.md)** and follow it end to end — it covers creating the Sheet and Drive folder, setting Script Properties, deploying the Web App, and pointing both HTML files at the deployed URL.
 2. Open `index.html` in a browser to test the public form.
 3. Open `admin.html` and log in to test the dashboard.
+4. (Optional) If you want individual staff logins instead of one shared password, open `hash-generator.html` — it runs entirely offline in your browser and produces a ready-to-paste row for the Sheet's `admins` tab. See [SETUP_GUIDE.md, step 9](./SETUP_GUIDE.md#9-optional-set-up-per-user-admin-accounts).
 
 ---
 

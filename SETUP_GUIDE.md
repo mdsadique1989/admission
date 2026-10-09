@@ -114,13 +114,14 @@ You have a few options, roughly in order of how public you want this to be:
 
 ## 8. Test end-to-end
 
-1. Open `index.html` and submit a test application with a real photo and signature file. Confirm you get an Application ID back.
-2. Check the Sheet — a new row should appear in the `data` tab.
-3. Check your inbox — you should receive the owner notification email (sent to `OWNER_NOTIFY_EMAIL` or your own account).
-4. If you entered an email address on the test form, check that inbox too for the minimal "Application ID" confirmation.
-5. Open `admin.html`, log in with username `admin` and the `ADMIN_PASSWORD` you set in step 4, and confirm the test application appears in the dashboard. Click **"देखें" (View)** on it and confirm the photo/signature load — they're fetched on demand through the `getImage` action rather than being preloaded, so this is the one step that actually exercises that path.
-6. In `index.html`, try the "आवेदन डाउनलोड करें" (Download Application) tab with the class, DOB, and Application ID/PEN you used — confirm the masked preview appears with **no** photo/signature shown, and that confirming it produces a full printable copy **with** the photo/signature now visible.
-7. Try editing the same test application (via "आवेदन संशोधित करें") **without** touching the photo/signature inputs, and save. Confirm it updates the existing row rather than creating a new one, and that the photo/signature still display correctly afterward — this exercises the "reuse the existing file, don't re-upload" path.
+1. Open `index.html` and submit a test application for **Class XI or XII**, picking a stream (Arts/Science/Commerce) — confirm the six subject dropdowns populate with the board's own codes (e.g. "Hindi — 306"), that Compulsory Group-2 won't let you re-pick whatever you chose in Group-1, and that the three Electives won't let you pick the same subject twice. Fill in a Roll No (optional — leave it blank once to confirm that's allowed too), a real photo and signature file, and your own email address so you can check the confirmation email in step 4. Confirm you get an Application ID back.
+2. Check the Sheet — a new row should appear in the `data` tab, including your Roll No and the `"SubjectName (Code)"` values in the six subject columns.
+3. Check your inbox — you should receive the owner notification email (sent to `OWNER_NOTIFY_EMAIL` or your own account), with serial number, Application ID, student name, class, and roll no.
+4. Check the applicant email too, at the address you entered — it carries the same set of details as the owner email (serial no., Application ID, name, class, roll no.), not just a bare Application ID.
+5. Open `admin.html`, log in with username `admin` and the `ADMIN_PASSWORD` you set in step 4, and confirm the test application appears in the dashboard, with the header showing "Version: ... · Logged in as: admin". Click **"देखें" (View)** on it and confirm the photo/signature load — they're fetched on demand through the `getImage` action rather than being preloaded, so this is the one step that actually exercises that path.
+6. Still in `admin.html`, click **"संपादित करें" (Edit)** on the same record. Change a plain field (e.g. the mobile number) and save — confirm the dashboard reflects the change immediately. Since you're logged in as `admin`, you should also see photo/signature upload fields in this modal; try replacing the photo and confirm it updates. If you set up a second, non-`admin` account (step 9), log in as that account instead and confirm its Edit modal has no photo/signature upload fields at all, and that its Export button is simply not present.
+7. In `index.html`, try the "आवेदन डाउनलोड करें" (Download Application) tab with the class, DOB, and Application ID/PEN you used — confirm the masked preview appears with **no** photo/signature shown, that it asks for the applicant's 12-digit Aadhaar number before revealing anything (and rejects a wrong one), and that confirming it with the correct Aadhaar produces a full printable copy **with** the photo/signature now visible.
+8. Try editing the same test application (via "आवेदन संशोधित करें") **without** touching the photo/signature inputs, and save. Confirm it updates the existing row rather than creating a new one, that the previously-selected stream/subjects reappear correctly in the dropdowns, and that the photo/signature still display correctly afterward — this exercises the "reuse the existing file, don't re-upload" path.
 
 ---
 
@@ -129,17 +130,18 @@ You have a few options, roughly in order of how public you want this to be:
 By default, all staff share one password (`ADMIN_PASSWORD`). To give individual staff members their own login instead:
 
 1. Open the Sheet and go to the `admins` tab (created automatically the first time anyone logs in, or manually add it with headers `username`, `passwordHash`, `displayName`).
-2. For each staff member, you need their password as a **SHA-256 hash, base64-encoded** — matching `hashPassword_()` in `Code.gs`. The easiest way to generate this correctly is to temporarily run this snippet from the Apps Script editor's **Execution** panel (Run → select a temporary function):
+2. For each staff member, you need their password as a **SHA-256 hash, base64-encoded** — matching `hashPassword_()` in `Code.gs`. The easiest way is the bundled **`hash-generator.html`**: open it in any browser (it runs entirely offline — nothing is sent anywhere), enter the username, password, and display name, click **Generate Hash**, then click **Copy Row**. That copies a tab-separated `username / hash / displayName` row ready to paste straight into the `admins` tab.
+
+   *Alternative, if you'd rather not use the tool:* temporarily add and run this function from the Apps Script editor, then copy the value it logs (delete the function afterward):
    ```js
    function generateHash() {
      Logger.log(hashPassword_('the-password-you-want'));
    }
    ```
-   Copy the logged value.
-3. Add a row: `username` (e.g. `principal`), `passwordHash` (the value you just generated), `displayName` (e.g. `Principal Sir`).
+3. Paste the row into the `admins` tab (or, if you used the Apps Script route, add it by hand): `username` (e.g. `principal`), `passwordHash` (the generated value — never the plain password), `displayName` (e.g. `Principal Sir`).
 4. Repeat for each staff account.
 5. **Once the `admins` tab has any rows at all, the legacy shared `ADMIN_PASSWORD` stops being used** — every login now requires a matching row in `admins`.
-6. **Only the account whose `username` is literally `admin` (case-insensitive) can export data to CSV** — every other account can search, view, and delete applications exactly the same, but won't see the Export button and is refused if it tries anyway. If you want a particular staff member to have export access, give their row the username `admin` specifically; any other username (e.g. `principal`, `clerk1`) never gets it, regardless of what's in `displayName`.
+6. **Only the account whose `username` is literally `admin` (case-insensitive) can export data to CSV, or replace a photo/signature when editing a record** — every other account can search, view, edit (text fields), and delete applications exactly the same, but won't see the Export button or the photo/signature upload fields, and is refused server-side if it tries anyway. If you want a particular staff member to have those two abilities, give their row the username `admin` specifically; any other username (e.g. `principal`, `clerk1`) never gets either, regardless of what's in `displayName`.
 
 ---
 
@@ -198,6 +200,8 @@ Whenever you edit `Code.gs` after the initial deployment:
 
 The `/exec` URL stays the same — you do **not** need to update `CONFIG.WEB_APP_URL` in the HTML files after this. Creating a brand-new deployment (instead of a new version of the existing one) *would* generate a different URL, so avoid that unless you specifically want to run two versions side by side.
 
+If the change you made was to `admin.html` itself (rather than `Code.gs`), there's no Apps Script redeployment step at all — just replace the hosted file. It's worth manually bumping the `ADMIN_UI_VERSION` constant near the top of `admin.html`'s script whenever you do this, since that's what the dashboard's header displays next to the logged-in username — a quick way to confirm, at a glance, that a particular browser is actually running your latest copy rather than a cached or stale one.
+
 ---
 
 ## Migrating data from an older spreadsheet-based version
@@ -231,5 +235,7 @@ If you previously ran an older, differently-structured version of this system an
 | Pasting an old photo/signature Drive link directly into a browser shows "You need access" | Expected once files are private (or after running the optional re-lock script in step 11) — this is the point of the change, not a bug | View the image through the admin dashboard's "View" button, or the applicant's own edit/download flow, instead of a bare Drive link |
 | No owner notification email arriving | `OWNER_NOTIFY_ENABLED` is off, wrong `OWNER_NOTIFY_EMAIL`, or the owner account's daily Gmail sending quota is exhausted | Check the Script Property, check Apps Script **Executions** log for the specific error, check the owner account's Gmail sent folder/quota |
 | Applicant never gets a confirmation email | They left the email field blank (this is by design — email is optional) | No action needed; the owner notification email always fires regardless |
+| CSV export button is missing entirely | Expected if logged in as any account other than `admin` — export is restricted to that one username (see [step 9](#9-optional-set-up-per-user-admin-accounts)) | Log in as `admin` if you need to export |
 | CSV export button does nothing / errors | Session expired mid-session | Refresh and log in again |
+| Edit modal has no photo/signature upload fields | Expected if logged in as any account other than `admin` — photo/signature replacement is restricted the same way export is | Log in as `admin` if you need to replace a photo/signature |
 | `"Row changed, please refresh and try again"` on delete | Someone else changed the sheet between page load and the delete click | Click 🔄 Refresh, then retry the delete |

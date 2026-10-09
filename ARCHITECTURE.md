@@ -74,6 +74,10 @@ Apps Script's built-in mail service, used for two independent notification paths
 
 Plain HTML/CSS/vanilla JS, single files, no build step. Both hard-code the deployed Web App URL in a `CONFIG.WEB_APP_URL` constant and talk to it via `fetch`.
 
+### 6. `hash-generator.html` — optional offline utility
+
+Not part of the live request flow at all — doesn't talk to `Code.gs`, doesn't need `CONFIG.WEB_APP_URL`, can be opened with no network connection. Exists purely to produce `admins`-sheet-ready rows (username, SHA-256 password hash, display name) for setting up per-user admin logins, using the browser's built-in `crypto.subtle.digest('SHA-256', ...)` — the exact same algorithm as `hashPassword_()` in `Code.gs` — so a password never has to be typed into the Apps Script editor at all. See `SETUP_GUIDE.md` step 9.
+
 ---
 
 ## Photo/signature storage & access model
@@ -196,8 +200,9 @@ sequenceDiagram
     else credentials valid
         W->>C: clearFailedAttempts_()
         W->>S: logAudit_('login_success')
-        W-->>A: {success:true, token, displayName, expiresAt}
+        W-->>A: {success:true, token, username, displayName, expiresAt}
         A->>A: sessionStorage.setItem('uhsAdminSession', ...)
+        A->>A: header shows "Version: <ADMIN_UI_VERSION> · Logged in as: <username>"
     end
 
     Note over A,W: Later — staff clicks "View" on one record
@@ -210,7 +215,11 @@ sequenceDiagram
     A->>A: fetchAndShowImage() swaps a loading placeholder for the real <img>
 ```
 
-Every admin action (`adminList`, `adminExport`, `adminDelete`, `getImage`) sends the `token` instead of the password; `requireAdminToken_()` verifies its HMAC signature and expiry (`verifyToken_`) before proceeding. The token is stored in `sessionStorage` (cleared when the tab closes), never `localStorage`. `getImage` fetches strictly one file per call — the dashboard's record list and CSV export intentionally never carry image bytes in bulk.
+Every admin action (`adminList`, `adminExport`, `adminDelete`, `adminUpdate`, `getImage`) sends the `token` instead of the password; `requireAdminToken_()` verifies its HMAC signature and expiry (`verifyToken_`) before proceeding. The token is stored in `sessionStorage` (cleared when the tab closes), never `localStorage`. `getImage` fetches strictly one file per call — the dashboard's record list and CSV export intentionally never carry image bytes in bulk.
+
+**`adminUpdate`** (`admin.html`'s "संपादित करें / Edit" button) lets any logged-in admin correct a student's data directly — a typo'd mobile number, a misspelled name, a wrong class — without the applicant needing to go through the public Aadhaar+mobile edit flow at all. It's a deliberately separate, much simpler path from `handleSubmit_`: the edit modal is just one plain text input per field (the same set `fieldLabels` already shows in the View modal), pre-filled with the current value; there's no class/stream-dependent subject dropdown logic, and no re-validation beyond what `handleAdminUpdate_` itself enforces (date normalization for `dob`, and always refusing to write `applicationId`/`submittedAt` through `fields`). `updatedAt` is stamped automatically, and the action is logged to `auditLog` the same way a delete or export is. The plain-field part of this is intentionally *not* gated to the `"admin"` username the way export is — every admin account can use it, same as View and Delete.
+
+**Photo/signature replacement, within the same edit modal, is the one part of `adminUpdate` that IS gated to `"admin"` specifically** — same restriction pattern as CSV export. `admin.html` only renders the two file-upload inputs at all when `canExport()` is true for the current session; every other admin account sees just the plain-field table, nothing about images. Each upload is compressed client-side to the exact same size targets `index.html` uses for a fresh submission (`adminProcessImage()`, a direct port of `processImage()`), then sent as a base64 data URL alongside `fields`. Server-side, `handleAdminUpdate_` only acts on `body.photo`/`body.signature` if `auth.username` is `"admin"` — for anyone else, these are silently ignored exactly like a forged `fields.photoFileId` attempt would be, so the UI gate isn't the actual boundary, the server check is. A successful replacement runs through the ordinary `saveImage_()` path (a fresh, private file, same as any new submission) and is echoed back in the response as `photoFileId`/`signatureFileId` so the dashboard's in-memory copy of that row updates immediately, without needing a full page refresh. The previous file is left in Drive, not deleted — same "no cleanup of superseded files" behavior as the rest of this project.
 
 ---
 
@@ -222,11 +231,13 @@ Every admin action (`adminList`, `adminExport`, `adminDelete`, `getImage`) sends
 | Brute-forcing admin login | Per-username lockout after `MAX_LOGIN_ATTEMPTS` (default 5) for `LOGIN_LOCKOUT_MINUTES` (default 15); growing `Utilities.sleep()` delay per failed attempt |
 | Brute-forcing the public search / edit-lookup | `checkSearchRateLimit_()` — sliding window counter per search key via `CacheService`, `SEARCH_MAX_ATTEMPTS_PER_KEY` per `SEARCH_WINDOW_MINUTES` |
 | Someone who correctly guesses/knows class+DOB+ID/PEN getting the full record too easily | The reveal step additionally requires the applicant's own 12-digit Aadhaar number, checked server-side against the record — a much harder thing to guess than the initial lookup fields, and rate-limited on its own key (`reveal_<applicationId>`) separately from the initial search |
-| Leaking sensitive fields to an unauthenticated searcher | `maskRecordForPreview_()` strips/masks Aadhaar, guardian Aadhaar, mobile, bank account, IFSC, and blanks photo/signature URLs until a reveal token is exchanged |
+| Leaking sensitive fields to an unauthenticated searcher | `maskRecordForPreview_()` strips/masks Aadhaar, guardian Aadhaar, mobile, bank account, IFSC, and blanks `photoFileId`/`signatureFileId` (and the legacy `photoUrl`/`signatureUrl` columns) until a reveal token is exchanged |
 | Replaying or forging a reveal/session token | Both tokens are `base64(payload).hmac(payload)`; the HMAC secret (`ADMIN_TOKEN_SECRET`) is generated once with `Utilities.getUuid()` and stored in Script Properties, never hard-coded |
 | Concurrent writes corrupting data | `LockService.getScriptLock()` around the submit and delete handlers |
 | Duplicate applications | Aadhaar uniqueness check in `handleSubmit_`, with an edit path offered instead of a hard block |
 | Deleting the wrong row after data has shifted | `handleAdminDelete_` re-checks the row's `applicationId` against what the client expects before deleting |
+| An admin correcting data accidentally touching identity/file fields | `handleAdminUpdate_` silently ignores any attempt to write `applicationId` or `submittedAt` through `fields` (and `photoFileId`/`signatureFileId` the same way for anyone who isn't `"admin"`) — only other column names are accepted |
+| Photo/signature replacement restricted to one account | `handleAdminUpdate_` only acts on the optional `photo`/`signature` inputs if `auth.username` (case-insensitive) is literally `"admin"` — every other admin account has them silently ignored. `admin.html` also hides the upload fields entirely for non-`"admin"` sessions, same UI-convenience-not-the-boundary pattern as CSV export |
 | Accountability for admin actions | Append-only `auditLog` tab: every login, failed login, export, and delete is recorded with timestamp + username |
 | Export restricted to one account | `handleAdminExport_` checks `auth.username` (case-insensitive) against the literal string `"admin"` and refuses anyone else, server-side — `admin.html` also hides the Export button for non-`"admin"` sessions, but that's a UI convenience, not the actual boundary |
 | Image upload abuse | `saveImage_()` only accepts `image/jpeg`, `image/png`, `image/webp` data URLs; anything else is rejected with a field-level error, not silently dropped |
